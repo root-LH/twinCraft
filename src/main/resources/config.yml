@@ -1,0 +1,17 @@
+sync_groups:
+  - group_id: "lamp_sync"
+    description: "조명"
+    mqtt_topic: "dt/room1/control/relay"
+    minecraft_components:
+      switch:
+        material: "LEVER"
+        world: "world"
+        x: -4502
+        y: 87
+        z: 1723
+      light:
+        material: "REDSTONE_LAMP"
+        world: "world"
+        x: -4498
+        y: 91
+        z: 1725
