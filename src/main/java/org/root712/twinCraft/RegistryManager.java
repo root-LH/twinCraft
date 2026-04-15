@@ -20,6 +20,9 @@ public class RegistryManager {
         this.provider = provider;
     }
 
+    /**
+     * [3~4주차] 매핑 테이블 로드 및 캐싱
+     */
     public void reload() {
         if (provider == null) {
             plugin.getLogger().warning("RegistryProvider가 설정되지 않았습니다!");
@@ -34,7 +37,7 @@ public class RegistryManager {
         if (devices != null) {
             deviceMap.putAll(devices);
             rebuildMaps();
-            plugin.getLogger().info(devices.size() + "개의 장치를 로드했습니다.");
+            plugin.getLogger().info(devices.size() + "개의 장치를 매핑 테이블에 로드했습니다.");
         }
     }
 
@@ -64,6 +67,12 @@ public class RegistryManager {
 
     public DeviceConfig getDevice(String name) {
         return deviceMap.get(name);
+    }
+
+    public void addDevice(String name, DeviceConfig device) {
+        deviceMap.put(name, device);
+        rebuildMaps();
+        save();
     }
 
     public void deleteDevice(String name) {
