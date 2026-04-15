@@ -1,17 +1,19 @@
 package org.root712.twinCraft;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Lightable;
 import org.bukkit.block.data.Powerable;
+import org.bukkit.entity.TextDisplay;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 public class MqttManager implements MqttCallback {
     private final TwinCraft plugin;
     private MqttClient client;
-    // 이후에 팀원 C의 DB 주소로 업데이트
     private final String broker = "tcp://127.0.0.1:1883";
 
     public MqttManager(TwinCraft plugin){
@@ -28,8 +30,8 @@ public class MqttManager implements MqttCallback {
             client.setCallback(this);
             client.connect(options);
 
-            // 이 부분 이후에 변경해야함
             client.subscribe("dt/+/control/#");
+            client.subscribe("sensor/#"); // 예시로 추가
             plugin.getLogger().info("MQTT 브로커에 연결되었습니다.");
         } catch (MqttException e) {
             plugin.getLogger().severe("MQTT 연결 실패: " + e.getMessage());
@@ -42,7 +44,7 @@ public class MqttManager implements MqttCallback {
                 client.publish(topic, new MqttMessage(message.getBytes()));
             }
         } catch (MqttException e) {
-            throw new RuntimeException(e);
+            e.printStackTrace();
         }
     }
 
@@ -54,22 +56,19 @@ public class MqttManager implements MqttCallback {
     @Override
     public void messageArrived(String topic, MqttMessage message) throws Exception {
         String payload = new String(message.getPayload());
-
-        SyncGroup group = plugin.getRegistryManager().getGroupByTopic(topic);
-        if (group != null){
+        DeviceConfig device = plugin.getRegistryManager().getDeviceByTopic(topic);
+        
+        if (device != null){
             Bukkit.getScheduler().runTask(plugin, () -> {
-                // 리스트에서 id가 "light"인 컴포넌트 찾기
-                SyncGroup.Component lightComp = group.components.stream()
-                        .filter(c -> "light".equals(c.id))
-                        .findFirst()
-                        .orElse(null);
+                Location loc = device.toBukkitLocation();
+                if (loc == null) return;
 
-                if (lightComp != null && lightComp.toBukkitLocation() != null){
-                    Block block = lightComp.toBukkitLocation().getBlock();
+                String action = device.getAction();
+                boolean isOn = payload.equalsIgnoreCase("ON") || payload.equalsIgnoreCase("TRUE");
+
+                if ("CIRCUIT".equalsIgnoreCase(action)) {
+                    Block block = loc.getBlock();
                     BlockData data = block.getBlockData();
-                    boolean isOn = payload.equalsIgnoreCase("ON");
-
-                    // Material 대신 BlockData의 상태(Lightable, Powerable 등)를 변경하는 방식 사용
                     if (data instanceof Lightable lightable) {
                         lightable.setLit(isOn);
                         block.setBlockData(lightable);
@@ -77,14 +76,24 @@ public class MqttManager implements MqttCallback {
                         powerable.setPowered(isOn);
                         block.setBlockData(powerable);
                     }
+                } else if ("BLOCK_CHANGE".equalsIgnoreCase(action)) {
+                    String matName = isOn ? device.getActionData().get("on_material") : device.getActionData().get("off_material");
+                    if (matName != null) {
+                        Material mat = Material.matchMaterial(matName);
+                        if (mat != null) {
+                            loc.getBlock().setType(mat);
+                        }
+                    }
+                } else if ("TEXT_DISPLAY".equalsIgnoreCase(action)) {
+                    loc.getWorld().getNearbyEntities(loc, 2, 2, 2).stream()
+                            .filter(e -> e instanceof TextDisplay)
+                            .map(e -> (TextDisplay) e)
+                            .forEach(td -> td.setText(payload));
                 }
             });
         }
     }
 
     @Override
-    public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
-        int postId = iMqttDeliveryToken.getMessageId();
-        plugin.getLogger().info("Publish 완료, id: " + postId);
-    }
+    public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {}
 }

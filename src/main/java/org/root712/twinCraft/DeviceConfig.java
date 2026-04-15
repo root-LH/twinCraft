@@ -1,0 +1,43 @@
+package org.root712.twinCraft;
+
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import java.util.Map;
+
+public class DeviceConfig {
+    String topic;
+    String type; // SENSOR, ACTUATOR
+    String world;
+    double x, y, z;
+    String action; // CIRCUIT, BLOCK_CHANGE, TEXT_DISPLAY
+    Map<String, String> actionData;
+
+    public Location toBukkitLocation() {
+        if (world == null || Bukkit.getWorld(world) == null) return null;
+        return new Location(Bukkit.getWorld(world), x, y, z);
+    }
+
+    public String getTopic() { return topic; }
+    public void setTopic(String topic) { this.topic = topic; }
+
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
+
+    public String getWorld() { return world; }
+    public void setWorld(String world) { this.world = world; }
+
+    public double getX() { return x; }
+    public void setX(double x) { this.x = x; }
+
+    public double getY() { return y; }
+    public void setY(double y) { this.y = y; }
+
+    public double getZ() { return z; }
+    public void setZ(double z) { this.z = z; }
+
+    public String getAction() { return action; }
+    public void setAction(String action) { this.action = action; }
+
+    public Map<String, String> getActionData() { return actionData; }
+    public void setActionData(Map<String, String> actionData) { this.actionData = actionData; }
+}

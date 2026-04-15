@@ -2,3 +2,7 @@ name: twinCraft
 version: '1.0-SNAPSHOT'
 main: org.root712.twinCraft.TwinCraft
 api-version: '1.21'
+commands:
+  tw:
+    description: TwinCraft main command
+    usage: /tw <list|edit|delete|view>

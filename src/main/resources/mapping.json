@@ -1,3 +1,35 @@
 {
-  "sync_groups": []
+  "LivingRoomLight": {
+    "topic": "dt/livingroom/light/control",
+    "type": "ACTUATOR",
+    "world": "world",
+    "x": 100,
+    "y": 64,
+    "z": 100,
+    "action": "CIRCUIT",
+    "actionData": {}
+  },
+  "StatusGate": {
+    "topic": "dt/gate/status/control",
+    "type": "ACTUATOR",
+    "world": "world",
+    "x": 105,
+    "y": 64,
+    "z": 100,
+    "action": "BLOCK_CHANGE",
+    "actionData": {
+      "on_material": "IRON_BLOCK",
+      "off_material": "AIR"
+    }
+  },
+  "TemperatureMonitor": {
+    "topic": "sensor/temperature",
+    "type": "SENSOR",
+    "world": "world",
+    "x": 110,
+    "y": 65,
+    "z": 100,
+    "action": "TEXT_DISPLAY",
+    "actionData": {}
+  }
 }

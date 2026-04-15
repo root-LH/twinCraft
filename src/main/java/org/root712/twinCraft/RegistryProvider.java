@@ -1,7 +1,9 @@
 package org.root712.twinCraft;
 
 import java.util.List;
+import java.util.Map;
 
 public interface RegistryProvider {
-    List<SyncGroup> loadAllGroups();
+    Map<String, DeviceConfig> loadAllDevices();
+    void saveAllDevices(Map<String, DeviceConfig> devices);
 }

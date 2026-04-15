@@ -8,18 +8,9 @@ import java.util.Map;
 public class RegistryManager {
     private final TwinCraft plugin;
     private RegistryProvider provider;
-    private final Map<String, SyncGroup> topicMap = new HashMap<>();
-    private final Map<Location, ComponentContext> locationMap = new HashMap<>();
-
-    public static class ComponentContext {
-        public final SyncGroup group;
-        public final SyncGroup.Component component;
-
-        public ComponentContext(SyncGroup group, SyncGroup.Component component) {
-            this.group = group;
-            this.component = component;
-        }
-    }
+    private final Map<String, DeviceConfig> deviceMap = new HashMap<>();
+    private final Map<String, DeviceConfig> topicMap = new HashMap<>();
+    private final Map<Location, DeviceConfig> locationMap = new HashMap<>();
 
     public RegistryManager(TwinCraft plugin) {
         this.plugin = plugin;
@@ -35,27 +26,62 @@ public class RegistryManager {
             return;
         }
 
+        deviceMap.clear();
         topicMap.clear();
         locationMap.clear();
 
-        for (SyncGroup group : provider.loadAllGroups()) {
-            topicMap.put(group.mqttTopic, group);
-            for (SyncGroup.Component comp : group.components) {
-                Location loc = comp.toBukkitLocation();
-                if (loc != null) {
-                    locationMap.put(loc, new ComponentContext(group, comp));
-                }
-            }
+        Map<String, DeviceConfig> devices = provider.loadAllDevices();
+        if (devices != null) {
+            deviceMap.putAll(devices);
+            rebuildMaps();
+            plugin.getLogger().info(devices.size() + "개의 장치를 로드했습니다.");
         }
-        plugin.getLogger().info(topicMap.size() + "개의 그룹을 로드했습니다.");
     }
 
-    public SyncGroup getGroupByTopic(String topic) {
+    private void rebuildMaps() {
+        topicMap.clear();
+        locationMap.clear();
+        for (DeviceConfig device : deviceMap.values()) {
+            if (device.getTopic() != null) {
+                topicMap.put(device.getTopic(), device);
+            }
+            Location loc = device.toBukkitLocation();
+            if (loc != null) {
+                locationMap.put(loc, device);
+            }
+        }
+    }
+
+    public void save() {
+        if (provider != null) {
+            provider.saveAllDevices(deviceMap);
+        }
+    }
+
+    public Map<String, DeviceConfig> getAllDevices() {
+        return deviceMap;
+    }
+
+    public DeviceConfig getDevice(String name) {
+        return deviceMap.get(name);
+    }
+
+    public void deleteDevice(String name) {
+        deviceMap.remove(name);
+        rebuildMaps();
+        save();
+    }
+
+    public void updateDevice() {
+        rebuildMaps();
+        save();
+    }
+
+    public DeviceConfig getDeviceByTopic(String topic) {
         return topicMap.get(topic);
     }
 
-    public ComponentContext getContextByLocation(Location loc) {
+    public DeviceConfig getDeviceByLocation(Location loc) {
         return locationMap.get(loc);
     }
-
 }

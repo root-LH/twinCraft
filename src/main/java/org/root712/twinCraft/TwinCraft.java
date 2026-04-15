@@ -23,6 +23,8 @@ public final class TwinCraft extends JavaPlugin {
 
         this.mqttManager.connect();
 
+        getCommand("tw").setExecutor(new TwinCraftCommand(this));
+
         getServer().getPluginManager().registerEvents(new InteractionListener(this), this);
         getLogger().info("TwinCraft가 성공적으로 활성화되었습니다.");
     }
