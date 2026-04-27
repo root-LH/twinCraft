@@ -151,6 +151,25 @@ public class TwinCraftCommand implements CommandExecutor {
                     sender.sendMessage(ChatColor.RED + "인터벌은 숫자(ms)여야 합니다.");
                 }
                 break;
+            case "action":
+                if (args.length < 4) {
+                    sender.sendMessage(ChatColor.RED + "사용법: /tw edit action [name] [value]");
+                    return;
+                }
+                device.setAction(args[3]);
+                sender.sendMessage(ChatColor.GREEN + name + "의 action이 " + args[3] + "(으)로 변경되었습니다.");
+                break;
+            case "data":
+                if (args.length < 5) {
+                    sender.sendMessage(ChatColor.RED + "사용법: /tw edit data [name] [key] [value]");
+                    return;
+                }
+                if (device.getActionData() == null) {
+                    device.setActionData(new java.util.HashMap<>());
+                }
+                device.getActionData().put(args[3], args[4]);
+                sender.sendMessage(ChatColor.GREEN + name + "의 actionData[" + args[3] + "]가 " + args[4] + "(으)로 설정되었습니다.");
+                break;
             case "pos":
                 if (args.length < 6) {
                     sender.sendMessage(ChatColor.RED + "사용법: /tw edit pos [name] [x] [y] [z]");
@@ -172,7 +191,7 @@ public class TwinCraftCommand implements CommandExecutor {
                 }
                 break;
             default:
-                sender.sendMessage(ChatColor.RED + "사용법: /tw edit topic|type|pos|trigger|interval [name] [value...]");
+                sender.sendMessage(ChatColor.RED + "사용법: /tw edit topic|type|pos|trigger|interval|action|data [name] [value...]");
                 return;
         }
 
@@ -217,6 +236,9 @@ public class TwinCraftCommand implements CommandExecutor {
         sender.sendMessage(ChatColor.WHITE + "Y: " + device.getY());
         sender.sendMessage(ChatColor.WHITE + "Z: " + device.getZ());
         sender.sendMessage(ChatColor.WHITE + "Action: " + device.getAction());
+        if (device.getActionData() != null && !device.getActionData().isEmpty()) {
+            sender.sendMessage(ChatColor.WHITE + "ActionData: " + device.getActionData().toString());
+        }
         sender.sendMessage(ChatColor.WHITE + "Trigger: " + device.getTriggerType());
         sender.sendMessage(ChatColor.WHITE + "Interval: " + device.getUpdateInterval() + "ms");
     }
@@ -230,6 +252,8 @@ public class TwinCraftCommand implements CommandExecutor {
         sender.sendMessage(ChatColor.WHITE + "/tw edit pos [name] [x] [y] [z] - 위치 변경");
         sender.sendMessage(ChatColor.WHITE + "/tw edit trigger [name] [polling|event] - 트리거 방식 설정");
         sender.sendMessage(ChatColor.WHITE + "/tw edit interval [name] [ms] - 폴링 주기 설정");
+        sender.sendMessage(ChatColor.WHITE + "/tw edit action [name] [action] - 액션 설정");
+        sender.sendMessage(ChatColor.WHITE + "/tw edit data [name] [key] [value] - 액션 데이터 설정");
         sender.sendMessage(ChatColor.WHITE + "/tw delete [name] - 노드 삭제");
         sender.sendMessage(ChatColor.WHITE + "/tw view [name] - 노드 정보 출력");
     }
