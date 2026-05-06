@@ -1,35 +1,126 @@
 {
-  "LivingRoomLight": {
-    "topic": "dt/livingroom/light/control",
-    "type": "ACTUATOR",
+  "LightSwitch_Sensor": {
+    "topic": "twin/light/lightswitch_node_01/state",
+    "type": "SENSOR",
     "world": "world",
-    "x": 100,
-    "y": 64,
-    "z": 100,
+    "x": 100.0,
+    "y": 64.0,
+    "z": 100.0,
     "action": "CIRCUIT",
-    "actionData": {}
+    "actionData": {
+      "on_value": "1",
+      "off_value": "0",
+      "target": "LightSwitch_LED"
+    },
+    "updateInterval": 0,
+    "triggerType": "EVENT"
   },
-  "StatusGate": {
-    "topic": "dt/gate/status/control",
+  "LightSwitch_LED": {
+    "topic": "twin/light/lightswitch_node_01/cmd",
     "type": "ACTUATOR",
     "world": "world",
-    "x": 105,
-    "y": 64,
-    "z": 100,
+    "x": 101.0,
+    "y": 64.0,
+    "z": 100.0,
+    "action": "BLOCK_CHANGE",
+    "actionData": {
+      "on_material": "REDSTONE_LAMP",
+      "off_material": "AIR"
+    },
+    "updateInterval": 0,
+    "triggerType": "EVENT"
+  },
+  "Light_Sensor": {
+    "topic": "twin/light/light_node_01/state",
+    "type": "SENSOR",
+    "world": "world",
+    "x": 105.0,
+    "y": 64.0,
+    "z": 100.0,
+    "action": "CIRCUIT",
+    "actionData": {
+      "on_value": "1",
+      "off_value": "0",
+      "target": "Light_LED"
+    },
+    "updateInterval": 1000,
+    "triggerType": "POLLING"
+  },
+  "Light_LED": {
+    "topic": "twin/light/light_node_01/cmd",
+    "type": "ACTUATOR",
+    "world": "world",
+    "x": 106.0,
+    "y": 64.0,
+    "z": 100.0,
+    "action": "BLOCK_CHANGE",
+    "actionData": {
+      "on_material": "GLOWSTONE",
+      "off_material": "AIR"
+    },
+    "updateInterval": 0,
+    "triggerType": "EVENT"
+  },
+  "Env_Sensor": {
+    "topic": "twin/env/env_node_01/state",
+    "type": "SENSOR",
+    "world": "world",
+    "x": 110.0,
+    "y": 64.0,
+    "z": 100.0,
+    "action": "CIRCUIT",
+    "actionData": {
+      "on_value": "1",
+      "off_value": "0",
+      "target": "Env_Servo"
+    },
+    "updateInterval": 5000,
+    "triggerType": "POLLING"
+  },
+  "Env_Servo": {
+    "topic": "twin/env/env_node_01/cmd",
+    "type": "ACTUATOR",
+    "world": "world",
+    "x": 111.0,
+    "y": 64.0,
+    "z": 100.0,
     "action": "BLOCK_CHANGE",
     "actionData": {
       "on_material": "IRON_BLOCK",
       "off_material": "AIR"
-    }
+    },
+    "updateInterval": 0,
+    "triggerType": "EVENT"
   },
-  "TemperatureMonitor": {
-    "topic": "sensor/temperature",
+  "Door_Sensor": {
+    "topic": "twin/door/door_node_01/state",
     "type": "SENSOR",
     "world": "world",
-    "x": 110,
-    "y": 65,
-    "z": 100,
-    "action": "TEXT_DISPLAY",
-    "actionData": {}
+    "x": 115.0,
+    "y": 64.0,
+    "z": 100.0,
+    "action": "BLOCK_CHANGE",
+    "actionData": {
+      "on_material": "IRON_DOOR",
+      "off_material": "AIR",
+      "target": "Door_Servo"
+    },
+    "updateInterval": 0,
+    "triggerType": "EVENT"
+  },
+  "Door_Servo": {
+    "topic": "twin/door/door_node_01/cmd",
+    "type": "ACTUATOR",
+    "world": "world",
+    "x": 116.0,
+    "y": 64.0,
+    "z": 100.0,
+    "action": "BLOCK_CHANGE",
+    "actionData": {
+      "on_material": "IRON_DOOR",
+      "off_material": "AIR"
+    },
+    "updateInterval": 0,
+    "triggerType": "EVENT"
   }
 }
