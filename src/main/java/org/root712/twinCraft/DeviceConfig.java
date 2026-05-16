@@ -16,6 +16,8 @@ public class DeviceConfig {
     int updateInterval; // 0이면 이벤트 기반, 그 외는 ms 단위 주기
     String triggerType; // POLLING, EVENT
 
+    public transient String currentState = "0";
+
     public Location toBukkitLocation() {
         if (world == null || Bukkit.getWorld(world) == null) return null;
         return new Location(Bukkit.getWorld(world), x, y, z);
@@ -50,4 +52,7 @@ public class DeviceConfig {
 
     public String getTriggerType() { return triggerType; }
     public void setTriggerType(String triggerType) { this.triggerType = triggerType; }
+
+    public String getCurrentState(){ return currentState == null ? "0" : currentState; }
+    public String setCurrentState(String state){ this.currentState = state; }
 }

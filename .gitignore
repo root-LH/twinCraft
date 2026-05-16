@@ -1,6 +1,7 @@
 # Gradle
 .gradle/
 build/
+gradlew
 
 # IntelliJ IDEA
 .idea/
@@ -23,3 +24,6 @@ Thumbs.db
 
 # Temporary mapping data (optional, but usually best to keep the default version in src/main/resources)
 # mapping.json
+
+# Text files
+*.txt

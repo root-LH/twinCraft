@@ -4,9 +4,9 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 public class MqttManager implements MqttCallback {
-    private boolean toggleState = false; // TODO: 토글 상태 저장 변수(테스트 이후 삭제)
     private final TwinCraft plugin;
     private MqttClient client;
+    private final String topicGlobal = "/twin/#";
 
     public MqttManager(TwinCraft plugin){
         this.plugin = plugin;
@@ -39,11 +39,9 @@ public class MqttManager implements MqttCallback {
             client.connect(options);
             
             plugin.getLogger().info("MQTT 브로커에 연결되었습니다: " + broker);
-            // TODO: 테스트용 토픽 구독 시작 (7주차 이후 제거)
-            String testTopic = "";
-            client.subscribe(testTopic, 1); // QoS 1로 구독
-            plugin.getLogger().info("테스트 토픽 구독 시작: " + testTopic);
-            // END
+            
+            client.subscribe(topicGlobal, 1);
+
         } catch (MqttException e) {
             plugin.getLogger().severe("MQTT 연결 중 오류 발생: " + e.getMessage());
             e.printStackTrace();
@@ -68,7 +66,6 @@ public class MqttManager implements MqttCallback {
      * [9~10주차 구현 예정] MQTT 메시지 발행
      */
     public void publish(String topic, String message){
-        // TODO: 클라이언트를 통한 메시지 발행 로직 작성
         if (client == null || !client.isConnected()) return;
         try {
             MqttMessage mqttMessage = new MqttMessage(message.getBytes());
@@ -79,23 +76,7 @@ public class MqttManager implements MqttCallback {
             plugin.getLogger().severe("메시지 송신 실패: " + e.getMessage());
         }
     }
-
-    // TODO: 데이터 송신용 (테스트 후 삭제)
-    public void startTestScheduler() {
-        // 마인크래프트 서버의 스케줄러 활용 (20틱 = 1초)
-        plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
-            if (client != null && client.isConnected()) {
-                // 상태값 토글 (true -> "1", false -> "0")
-                toggleState = !toggleState;
-                String value = toggleState ? "1" : "0";
-                
-                // 테스트용 타겟 토픽으로 전송
-                String targetTopic = "";
-                publish(targetTopic, value);
-            }
-        }, 100L, 100L); // 5초(100틱) 후 시작, 5초마다 반복
-    }
-
+   
     @Override
     public void connectionLost(Throwable throwable) {
         plugin.getLogger().warning("MQTT 연결이 유실되었습니다.");
@@ -103,11 +84,31 @@ public class MqttManager implements MqttCallback {
 
     @Override
     public void messageArrived(String topic, MqttMessage message) throws Exception {
-        // TODO: 구독한 토픽에 대한 메시지 수신 테스트 (이후 삭제 예정)
-        plugin.getLogger().info("[MQTT 수신] 토픽: " + topic + " | 값: " + message);
-        // END
         
         // [7~8주차 구현 예정] 메시지 수신 시 블록 업데이트 로직
+        String value = new String(message.getPayload());
+        DeviceConfig config = plugin.getRegistryManager().getDeviceByTopic(topic);
+        if (config == null){
+            return;
+        }
+        // 비 SENSOR 타입의 처리 (return)
+        if (!"SENSOR".equals(config.getType())){
+            return;
+        }
+
+        String action = config.getAction();
+        switch (action) {
+            case "CIRCUIT":
+                
+                break;
+            
+            case "BLOCK_CHANGE":
+
+                break;
+                
+            default:
+                break;
+        }
     }
 
     @Override

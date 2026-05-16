@@ -22,7 +22,6 @@ public final class TwinCraft extends JavaPlugin {
         // [5~16주차 구현 로직들의 기초 초기화]
         this.mqttManager = new MqttManager(this);
         this.mqttManager.connect(); // MQTT 연결 시작
-        this.mqttManager.startTestScheduler();
 
         getCommand("tw").setExecutor(new TwinCraftCommand(this));
         getServer().getPluginManager().registerEvents(new InteractionListener(this), this);

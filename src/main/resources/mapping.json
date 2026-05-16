@@ -1,6 +1,6 @@
 {
   "LightSwitch_Sensor": {
-    "topic": "twin/light/lightswitch_node_01/state",
+    "topic": "twin/device/lightswitch_node_01/led/state",
     "type": "SENSOR",
     "world": "world",
     "x": 100.0,
@@ -16,7 +16,7 @@
     "triggerType": "EVENT"
   },
   "LightSwitch_LED": {
-    "topic": "twin/light/lightswitch_node_01/cmd",
+    "topic": "twin/device/lightswitch_node_01/led/cmd",
     "type": "ACTUATOR",
     "world": "world",
     "x": 101.0,
@@ -31,7 +31,7 @@
     "triggerType": "EVENT"
   },
   "Light_Sensor": {
-    "topic": "twin/light/light_node_01/state",
+    "topic": "twin/device/light_node_01/brightness/state",
     "type": "SENSOR",
     "world": "world",
     "x": 105.0,
@@ -47,7 +47,7 @@
     "triggerType": "POLLING"
   },
   "Light_LED": {
-    "topic": "twin/light/light_node_01/cmd",
+    "topic": "twin/device/light_node_01/led/cmd",
     "type": "ACTUATOR",
     "world": "world",
     "x": 106.0,
@@ -61,8 +61,24 @@
     "updateInterval": 0,
     "triggerType": "EVENT"
   },
-  "Env_Sensor": {
-    "topic": "twin/env/env_node_01/state",
+  "Env_Sensor_Temperature": {
+    "topic": "twin/device/env_node_01/temperature/state",
+    "type": "SENSOR",
+    "world": "world",
+    "x": 110.0,
+    "y": 64.0,
+    "z": 100.0,
+    "action": "CIRCUIT",
+    "actionData": {
+      "on_value": "1",
+      "off_value": "0",
+      "target": "Env_Servo"
+    },
+    "updateInterval": 5000,
+    "triggerType": "POLLING"
+  },
+  "Env_Sensor_Humidity": {
+    "topic": "twin/device/env_node_01/humidity/state",
     "type": "SENSOR",
     "world": "world",
     "x": 110.0,
@@ -78,7 +94,7 @@
     "triggerType": "POLLING"
   },
   "Env_Servo": {
-    "topic": "twin/env/env_node_01/cmd",
+    "topic": "twin/device/env_node_01/fan_speed/cmd",
     "type": "ACTUATOR",
     "world": "world",
     "x": 111.0,
@@ -93,7 +109,7 @@
     "triggerType": "EVENT"
   },
   "Door_Sensor": {
-    "topic": "twin/door/door_node_01/state",
+    "topic": "twin/device/door_node_01/door/state",
     "type": "SENSOR",
     "world": "world",
     "x": 115.0,
@@ -109,7 +125,7 @@
     "triggerType": "EVENT"
   },
   "Door_Servo": {
-    "topic": "twin/door/door_node_01/cmd",
+    "topic": "twin/device/door_node_01/door/cmd",
     "type": "ACTUATOR",
     "world": "world",
     "x": 116.0,
