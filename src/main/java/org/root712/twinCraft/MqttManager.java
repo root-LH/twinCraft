@@ -248,6 +248,16 @@ public class MqttManager implements MqttCallback {
 
         Block block = loc.getBlock();
         actuator.setCurrentState(targetState);
+
+        if (Tag.DOORS.isTagged(material)) {
+            placeDoor(block, material);
+            return;
+        }
+
+        if (material == Material.AIR) {
+            removeDoorIfPresent(block);
+        }
+
         block.setType(material);
     }
 
@@ -291,18 +301,50 @@ public class MqttManager implements MqttCallback {
         textDisplays.clear();
     }
 
-    private void placeDoor(Block block, Material material){
-        block.setType(material);
-
-        Door lower = (Door) block.getBlockData();
-        lower.setHalf(Bisected.Half.BOTTOM);
-        block.setBlockData(lower);
+    private void placeDoor(Block block, Material material) {
+        if (!Tag.DOORS.isTagged(material)) {
+            block.setType(material);
+            return;
+        }
 
         Block upperBlock = block.getRelative(BlockFace.UP);
-        upperBlock.setType(material);
-        Door upper = (Door) upperBlock.getBlockData();
+        Block supportBlock = block.getRelative(BlockFace.DOWN);
+
+        if (!supportBlock.getType().isSolid()) {
+            plugin.getLogger().warning("Cannot place door because there is no solid support below: " + supportBlock.getLocation());
+            return;
+        }
+
+        if (!isAirOrDoor(block) || !isAirOrDoor(upperBlock)) {
+            plugin.getLogger().warning("Cannot place door because the space is occupied: " + block.getLocation());
+            return;
+        }
+
+        removeDoorIfPresent(block);
+
+        Door lower = (Door) material.createBlockData();
+        lower.setHalf(Bisected.Half.BOTTOM);
+        block.setBlockData(lower, false);
+
+        Door upper = (Door) material.createBlockData();
         upper.setHalf(Bisected.Half.TOP);
-        upperBlock.setBlockData(upper);
+        upperBlock.setBlockData(upper, false);
+    }
+
+    private void removeDoorIfPresent(Block block) {
+        removeDoorHalf(block);
+        removeDoorHalf(block.getRelative(BlockFace.UP));
+        removeDoorHalf(block.getRelative(BlockFace.DOWN));
+    }
+
+    private void removeDoorHalf(Block block) {
+        if (Tag.DOORS.isTagged(block.getType())) {
+            block.setType(Material.AIR, false);
+        }
+    }
+
+    private boolean isAirOrDoor(Block block) {
+        return block.getType().isAir() || Tag.DOORS.isTagged(block.getType());
     }
 
     @Override
