@@ -168,6 +168,7 @@ public class TwinCraftCommand implements CommandExecutor {
                     device.setActionData(new java.util.HashMap<>());
                 }
                 device.getActionData().put(args[3], args[4]);
+                refreshRuntimeState(device);
                 sender.sendMessage(ChatColor.GREEN + name + "의 actionData[" + args[3] + "]가 " + args[4] + "(으)로 설정되었습니다.");
                 break;
             case "pos":
@@ -185,6 +186,7 @@ public class TwinCraftCommand implements CommandExecutor {
                     if (sender instanceof Player) {
                         device.setWorld(((Player) sender).getWorld().getName());
                     }
+                    refreshRuntimeState(device);
                     sender.sendMessage(ChatColor.GREEN + name + "의 좌표가 변경되었습니다.");
                 } catch (NumberFormatException e) {
                     sender.sendMessage(ChatColor.RED + "좌표는 숫자여야 합니다.");
@@ -237,10 +239,19 @@ public class TwinCraftCommand implements CommandExecutor {
         sender.sendMessage(ChatColor.WHITE + "Z: " + device.getZ());
         sender.sendMessage(ChatColor.WHITE + "Action: " + device.getAction());
         if (device.getActionData() != null && !device.getActionData().isEmpty()) {
-            sender.sendMessage(ChatColor.WHITE + "ActionData: " + device.getActionData().toString());
+            sender.sendMessage(ChatColor.WHITE + "ActionData: " + device.getActionData());
         }
+        sender.sendMessage(ChatColor.WHITE + "CurrentState: " + device.getCurrentState());
         sender.sendMessage(ChatColor.WHITE + "Trigger: " + device.getTriggerType());
         sender.sendMessage(ChatColor.WHITE + "Interval: " + device.getUpdateInterval() + "ms");
+    }
+
+    private void refreshRuntimeState(DeviceConfig device) {
+        if ("TEXT_DISPLAY".equalsIgnoreCase(device.getAction())) {
+            plugin.getMqttManager().refreshTextDisplay(device);
+        } else if ("TOGGLE".equalsIgnoreCase(device.getAction())) {
+            plugin.getMqttManager().refreshToggle(device);
+        }
     }
 
     private void sendHelp(CommandSender sender) {
