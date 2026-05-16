@@ -54,5 +54,5 @@ public class DeviceConfig {
     public void setTriggerType(String triggerType) { this.triggerType = triggerType; }
 
     public String getCurrentState(){ return currentState == null ? "0" : currentState; }
-    public String setCurrentState(String state){ this.currentState = state; }
+    public void setCurrentState(String state){ this.currentState = state; }
 }
