@@ -34,14 +34,14 @@
     "topic": "twin/device/light_node_01/brightness/state",
     "type": "SENSOR",
     "world": "world",
-    "x": 105.0,
-    "y": 64.0,
-    "z": 100.0,
+    "x": 987.0,
+    "y": 53.0,
+    "z": 735.0,
     "action": "TEXT_DISPLAY",
     "actionData": {
       "format": "조도: %s lux",
       "color": "YELLOW",
-      "yaw": "180",
+      "yaw": "90",
       "target": "Light_LED",
       "threshold": "300",
       "on_value": "1",
@@ -57,10 +57,10 @@
     "x": 106.0,
     "y": 64.0,
     "z": 100.0,
-    "action": "BLOCK_CHANGE",
+    "action": "WORLD_TIME",
     "actionData": {
-      "on_material": "GLOWSTONE",
-      "off_material": "AIR"
+      "on_time": "6000",
+      "off_time": "18000"
     },
     "updateInterval": 0,
     "triggerType": "EVENT"
@@ -79,6 +79,7 @@
       "yaw": "90",
       "target": "Env_Servo",
       "threshold": "25",
+      "threshold_dependency": "Env_Sensor_Humidity",
       "on_value": "1",
       "off_value": "0"
     },
@@ -99,6 +100,7 @@
       "yaw": "90",
       "target": "Env_Servo",
       "threshold": "65",
+      "threshold_dependency": "Env_Sensor_Temperature",
       "on_value": "1",
       "off_value": "0"
     },
@@ -109,15 +111,15 @@
     "topic": "twin/device/env_node_01/fan_speed/cmd",
     "type": "ACTUATOR",
     "world": "world",
-    "x": 111.0,
-    "y": 64.0,
-    "z": 100.0,
+    "x": 993.0,
+    "y": 58.0,
+    "z": 730.0,
     "action": "BLOCK_CHANGE",
     "actionData": {
       "on_material": "IRON_TRAPDOOR",
       "off_material": "AIR",
       "block_style": "WALL_FAN",
-      "facing": "EAST",
+      "facing": "SOUTH",
       "particle": "CLOUD"
     },
     "updateInterval": 0,

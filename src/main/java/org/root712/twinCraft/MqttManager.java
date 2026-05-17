@@ -202,18 +202,39 @@ public class MqttManager implements MqttCallback {
             return;
         }
 
-        try {
-            double currentValue = Double.parseDouble(value);
-            double threshold = Double.parseDouble(thresholdValue);
-            String state = currentValue >= threshold
-                    ? sensor.getActionData().getOrDefault("on_value", "1")
-                    : sensor.getActionData().getOrDefault("off_value", "0");
+        boolean shouldTurnOn = isThresholdActive(sensor);
+        String dependencyName = sensor.getActionData().get("threshold_dependency");
+        if (dependencyName != null && !dependencyName.isEmpty()) {
+            DeviceConfig dependency = plugin.getRegistryManager().getDevice(dependencyName);
+            shouldTurnOn = shouldTurnOn || isThresholdActive(dependency);
+        }
 
-            if (isBinaryValue(state)) {
-                applyTargetState(sensor, state);
-            }
+        String state = shouldTurnOn
+                ? sensor.getActionData().getOrDefault("on_value", "1")
+                : sensor.getActionData().getOrDefault("off_value", "0");
+
+        if (isBinaryValue(state)) {
+            applyTargetState(sensor, state);
+        }
+    }
+
+    private boolean isThresholdActive(DeviceConfig sensor) {
+        if (sensor == null || sensor.getActionData() == null) {
+            return false;
+        }
+
+        String thresholdValue = sensor.getActionData().get("threshold");
+        if (thresholdValue == null) {
+            return false;
+        }
+
+        try {
+            double currentValue = Double.parseDouble(sensor.getCurrentState());
+            double threshold = Double.parseDouble(thresholdValue);
+            return currentValue >= threshold;
         } catch (NumberFormatException ignored) {
-            plugin.getLogger().warning("Invalid threshold payload: " + value);
+            plugin.getLogger().warning("Invalid threshold state: " + sensor.getCurrentState());
+            return false;
         }
     }
 
@@ -242,6 +263,13 @@ public class MqttManager implements MqttCallback {
             return;
         }
 
+        actuator.setCurrentState(targetState);
+
+        if ("WORLD_TIME".equalsIgnoreCase(actuator.getAction())) {
+            applyWorldTime(actuator, targetState);
+            return;
+        }
+
         String materialName = "1".equals(targetState)
                 ? actuator.getActionData().get("on_material")
                 : actuator.getActionData().get("off_material");
@@ -252,7 +280,6 @@ public class MqttManager implements MqttCallback {
         }
 
         Block block = loc.getBlock();
-        actuator.setCurrentState(targetState);
 
         if ("WALL_FAN".equalsIgnoreCase(actuator.getActionData().get("block_style"))) {
             if ("1".equals(targetState)) {
@@ -361,6 +388,29 @@ public class MqttManager implements MqttCallback {
 
     private boolean isAirOrDoor(Block block) {
         return block.getType().isAir() || Tag.DOORS.isTagged(block.getType());
+    }
+
+    private void applyWorldTime(DeviceConfig actuator, String targetState) {
+        Location loc = actuator.toBukkitLocation();
+        if (loc == null || loc.getWorld() == null || actuator.getActionData() == null) {
+            return;
+        }
+
+        String timeValue = "1".equals(targetState)
+                ? actuator.getActionData().get("on_time")
+                : actuator.getActionData().get("off_time");
+
+        if (timeValue == null) {
+            plugin.getLogger().warning("Missing world time value for actuator: " + actuator.getTopic());
+            return;
+        }
+
+        try {
+            long time = Long.parseLong(timeValue);
+            loc.getWorld().setTime(time);
+        } catch (NumberFormatException e) {
+            plugin.getLogger().warning("Invalid world time value: " + timeValue);
+        }
     }
 
     private void placeWallFan(Block block, Material material, DeviceConfig actuator) {
