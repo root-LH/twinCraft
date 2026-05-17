@@ -4,11 +4,14 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Particle;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.type.Door;
+import org.bukkit.block.data.type.TrapDoor;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.TextDisplay;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.Tag;
 import org.bukkit.block.data.Bisected;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
@@ -32,6 +35,7 @@ public class MqttManager implements MqttCallback {
 
     private final TwinCraft plugin;
     private final Map<String, TextDisplay> textDisplays = new HashMap<>();
+    private final Map<String, BukkitTask> particleTasks = new HashMap<>();
 
     private MqttClient client;
 
@@ -77,6 +81,7 @@ public class MqttManager implements MqttCallback {
 
     public void disconnect() {
         removeTextDisplays();
+        stopAllParticleTasks();
 
         try {
             if (client != null && client.isConnected()) {
@@ -249,6 +254,17 @@ public class MqttManager implements MqttCallback {
         Block block = loc.getBlock();
         actuator.setCurrentState(targetState);
 
+        if ("WALL_FAN".equalsIgnoreCase(actuator.getActionData().get("block_style"))) {
+            if ("1".equals(targetState)) {
+                placeWallFan(block, material, actuator);
+                startFanParticle(targetName, block, actuator);
+            } else {
+                stopFanParticle(targetName);
+                block.setType(Material.AIR, false);
+            }
+            return;
+        }
+
         if (Tag.DOORS.isTagged(material)) {
             placeDoor(block, material);
             return;
@@ -345,6 +361,96 @@ public class MqttManager implements MqttCallback {
 
     private boolean isAirOrDoor(Block block) {
         return block.getType().isAir() || Tag.DOORS.isTagged(block.getType());
+    }
+
+    private void placeWallFan(Block block, Material material, DeviceConfig actuator) {
+        if (!isTrapDoor(material)) {
+            block.setType(material, false);
+            return;
+        }
+
+        if (!block.getType().isAir() && !isTrapDoor(block.getType())) {
+            plugin.getLogger().warning("Cannot place wall fan because the space is occupied: " + block.getLocation());
+            return;
+        }
+
+        TrapDoor trapDoor = (TrapDoor) material.createBlockData();
+        trapDoor.setOpen(true);
+        trapDoor.setHalf(Bisected.Half.TOP);
+        trapDoor.setFacing(parseBlockFace(actuator.getActionData().getOrDefault("facing", "EAST")));
+
+        block.setBlockData(trapDoor, false);
+    }
+
+    private void startFanParticle(String key, Block block, DeviceConfig actuator) {
+        stopFanParticle(key);
+
+        BlockFace facing = parseBlockFace(actuator.getActionData().getOrDefault("facing", "EAST"));
+        Particle particle = parseParticle(actuator.getActionData().getOrDefault("particle", "CLOUD"));
+
+        BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            if (block.getWorld() == null || !isTrapDoor(block.getType())) {
+                stopFanParticle(key);
+                return;
+            }
+
+            Location particleLoc = block.getLocation().add(
+                    0.5 + facing.getModX() * 0.75,
+                    0.5,
+                    0.5 + facing.getModZ() * 0.75
+            );
+
+            block.getWorld().spawnParticle(
+                    particle,
+                    particleLoc,
+                    6,
+                    Math.abs(facing.getModZ()) * 0.35,
+                    0.08,
+                    Math.abs(facing.getModX()) * 0.35,
+                    0.02
+            );
+        }, 0L, 10L);
+
+        particleTasks.put(key, task);
+    }
+
+    private void stopFanParticle(String key) {
+        BukkitTask task = particleTasks.remove(key);
+        if (task != null) {
+            task.cancel();
+        }
+    }
+
+    private void stopAllParticleTasks() {
+        for (BukkitTask task : particleTasks.values()) {
+            if (task != null) {
+                task.cancel();
+            }
+        }
+        particleTasks.clear();
+    }
+
+    private boolean isTrapDoor(Material material) {
+        return material != null && Tag.TRAPDOORS.isTagged(material);
+    }
+
+    private BlockFace parseBlockFace(String value) {
+        try {
+            BlockFace face = BlockFace.valueOf(value.toUpperCase(Locale.ROOT));
+            if (face == BlockFace.NORTH || face == BlockFace.SOUTH || face == BlockFace.EAST || face == BlockFace.WEST) {
+                return face;
+            }
+        } catch (IllegalArgumentException | NullPointerException ignored) {
+        }
+        return BlockFace.EAST;
+    }
+
+    private Particle parseParticle(String value) {
+        try {
+            return Particle.valueOf(value.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException | NullPointerException ignored) {
+            return Particle.CLOUD;
+        }
     }
 
     @Override

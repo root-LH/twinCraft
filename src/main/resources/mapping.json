@@ -114,8 +114,11 @@
     "z": 100.0,
     "action": "BLOCK_CHANGE",
     "actionData": {
-      "on_material": "IRON_BLOCK",
-      "off_material": "AIR"
+      "on_material": "IRON_TRAPDOOR",
+      "off_material": "AIR",
+      "block_style": "WALL_FAN",
+      "facing": "EAST",
+      "particle": "CLOUD"
     },
     "updateInterval": 0,
     "triggerType": "EVENT"
