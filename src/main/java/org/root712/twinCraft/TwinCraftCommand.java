@@ -110,6 +110,7 @@ public class TwinCraftCommand implements CommandExecutor {
                     return;
                 }
                 device.setTopic(args[3]);
+                refreshRuntimeState(device);
                 sender.sendMessage(ChatColor.GREEN + name + "의 topic이 " + args[3] + "(으)로 변경되었습니다.");
                 break;
             case "type":
@@ -136,6 +137,7 @@ public class TwinCraftCommand implements CommandExecutor {
                     return;
                 }
                 device.setTriggerType(trigger);
+                refreshRuntimeState(device);
                 sender.sendMessage(ChatColor.GREEN + name + "의 trigger가 " + trigger + "(으)로 변경되었습니다.");
                 break;
             case "interval":
@@ -146,6 +148,7 @@ public class TwinCraftCommand implements CommandExecutor {
                 try {
                     int interval = Integer.parseInt(args[3]);
                     device.setUpdateInterval(interval);
+                    refreshRuntimeState(device);
                     sender.sendMessage(ChatColor.GREEN + name + "의 interval이 " + interval + "ms로 변경되었습니다.");
                 } catch (NumberFormatException e) {
                     sender.sendMessage(ChatColor.RED + "인터벌은 숫자(ms)여야 합니다.");
@@ -247,6 +250,8 @@ public class TwinCraftCommand implements CommandExecutor {
     }
 
     private void refreshRuntimeState(DeviceConfig device) {
+        plugin.getMqttManager().refreshPolling(device);
+
         if ("TEXT_DISPLAY".equalsIgnoreCase(device.getAction())) {
             plugin.getMqttManager().refreshTextDisplay(device);
         } else if ("TOGGLE".equalsIgnoreCase(device.getAction())) {
