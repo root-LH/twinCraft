@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class MqttManager implements MqttCallback {
     private static final String TOPIC_GLOBAL = "twin/#";
@@ -36,6 +37,9 @@ public class MqttManager implements MqttCallback {
     private final TwinCraft plugin;
     private final Map<String, TextDisplay> textDisplays = new HashMap<>();
     private final Map<String, BukkitTask> particleTasks = new HashMap<>();
+    private final Map<String, String> pendingSensorValues = new ConcurrentHashMap<>();
+    private final Map<String, BukkitTask> pollingTasks = new HashMap<>();
+    private final Map<String, Integer> pollingIntervals = new HashMap<>();
 
     private MqttClient client;
 
@@ -82,6 +86,7 @@ public class MqttManager implements MqttCallback {
     public void disconnect() {
         removeTextDisplays();
         stopAllParticleTasks();
+        stopAllPollingTasks();
 
         try {
             if (client != null && client.isConnected()) {
@@ -121,7 +126,60 @@ public class MqttManager implements MqttCallback {
             return;
         }
 
+        if (isPollingSensor(config)) {
+            queuePollingSensorValue(config, value);
+            return;
+        }
+
         Bukkit.getScheduler().runTask(plugin, () -> handleSensor(config, value));
+    }
+
+    private boolean isPollingSensor(DeviceConfig sensor) {
+        return "POLLING".equalsIgnoreCase(sensor.getTriggerType()) && sensor.getUpdateInterval() > 0;
+    }
+
+    private void queuePollingSensorValue(DeviceConfig sensor, String value) {
+        String topic = sensor.getTopic();
+        if (topic == null || topic.isEmpty()) {
+            return;
+        }
+
+        pendingSensorValues.put(topic, value);
+        Bukkit.getScheduler().runTask(plugin, () -> ensurePollingTask(sensor));
+    }
+
+    private void ensurePollingTask(DeviceConfig sensor) {
+        String topic = sensor.getTopic();
+        if (topic == null || topic.isEmpty() || !isPollingSensor(sensor)) {
+            return;
+        }
+
+        int interval = sensor.getUpdateInterval();
+        Integer currentInterval = pollingIntervals.get(topic);
+        if (pollingTasks.containsKey(topic) && currentInterval != null && currentInterval == interval) {
+            return;
+        }
+
+        stopPollingTask(topic);
+
+        long periodTicks = Math.max(1L, Math.round(interval / 50.0));
+        BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, () -> runPollingCycle(topic), periodTicks, periodTicks);
+        pollingTasks.put(topic, task);
+        pollingIntervals.put(topic, interval);
+    }
+
+    private void runPollingCycle(String topic) {
+        DeviceConfig sensor = plugin.getRegistryManager().getDeviceByTopic(topic);
+        if (sensor == null || !"SENSOR".equalsIgnoreCase(sensor.getType()) || !isPollingSensor(sensor)) {
+            pendingSensorValues.remove(topic);
+            stopPollingTask(topic);
+            return;
+        }
+
+        String value = pendingSensorValues.remove(topic);
+        if (value != null) {
+            handleSensor(sensor, value);
+        }
     }
 
     private void handleSensor(DeviceConfig sensor, String value) {
@@ -194,6 +252,22 @@ public class MqttManager implements MqttCallback {
 
     public void refreshToggle(DeviceConfig sensor) {
         applyTargetState(sensor, null);
+    }
+
+    public void refreshPolling(DeviceConfig sensor) {
+        if (sensor == null) {
+            return;
+        }
+
+        if (isPollingSensor(sensor)) {
+            ensurePollingTask(sensor);
+            return;
+        }
+
+        String topic = sensor.getTopic();
+        if (topic != null && !topic.isEmpty()) {
+            stopPollingTask(topic);
+        }
     }
 
     private void applyThresholdAutomation(DeviceConfig sensor, String value) {
@@ -478,6 +552,25 @@ public class MqttManager implements MqttCallback {
             }
         }
         particleTasks.clear();
+    }
+
+    private void stopPollingTask(String topic) {
+        BukkitTask task = pollingTasks.remove(topic);
+        if (task != null) {
+            task.cancel();
+        }
+        pollingIntervals.remove(topic);
+    }
+
+    private void stopAllPollingTasks() {
+        for (BukkitTask task : pollingTasks.values()) {
+            if (task != null) {
+                task.cancel();
+            }
+        }
+        pollingTasks.clear();
+        pollingIntervals.clear();
+        pendingSensorValues.clear();
     }
 
     private boolean isTrapDoor(Material material) {
