@@ -14,6 +14,7 @@ import org.bukkit.entity.TextDisplay;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.Tag;
 import org.bukkit.block.data.Bisected;
+import org.bukkit.block.data.BlockData;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttClient;
@@ -338,12 +339,19 @@ public class MqttManager implements MqttCallback {
         }
 
         actuator.setCurrentState(targetState);
-
+        // WORLD_TIME
         if ("WORLD_TIME".equalsIgnoreCase(actuator.getAction())) {
             applyWorldTime(actuator, targetState);
             return;
         }
 
+        // CIRCUIT
+        if ("CIRCUIT".equalsIgnoreCase(actuator.getAction())){
+            applyCircuit(actuator, targetState);
+            return;
+        }
+
+        // BLOCK_CHANGE
         String materialName = "1".equals(targetState)
                 ? actuator.getActionData().get("on_material")
                 : actuator.getActionData().get("off_material");
@@ -376,6 +384,29 @@ public class MqttManager implements MqttCallback {
         }
 
         block.setType(material);
+    }
+
+    private void applyCircuit(DeviceConfig actuator, String targetState) {
+        Location loc = actuator.toBukkitLocation();
+        if (loc == null || loc.getWorld() == null) return;
+
+        Block block = loc.getBlock();
+        BlockData blockData = block.getBlockData();
+        boolean isOn = "1".equals(targetState);
+
+        if (blockData instanceof org.bukkit.block.data.Lightable lightable){
+            lightable.setLit(isOn);
+        }
+
+        if (blockData instanceof org.bukkit.block.data.Openable openable){
+            openable.setOpen(isOn);
+        }
+
+        if (blockData instanceof org.bukkit.block.data.Powerable powerable){
+            powerable.setPowered(isOn);
+        }
+
+        block.setBlockData(blockData, false);
     }
 
     private String formatDisplayText(DeviceConfig sensor, String value) {
