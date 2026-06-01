@@ -255,6 +255,16 @@ public class MqttManager implements MqttCallback {
         applyTargetState(sensor, null);
     }
 
+    public void triggerVirtualToggle(DeviceConfig sensor) {
+        if (sensor == null || sensor.getActionData() == null) {
+            return;
+        }
+
+        String nextState = "1".equals(sensor.getCurrentState()) ? "0" : "1";
+        sensor.setCurrentState(nextState);
+        applyTargetState(sensor, nextState);
+    }
+
     public void refreshPolling(DeviceConfig sensor) {
         if (sensor == null) {
             return;
