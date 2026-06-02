@@ -268,7 +268,7 @@ public class MqttManager implements MqttCallback {
     }
 
     private void publishSensorState(DeviceConfig sensor, String state) {
-        String topic = sensor.getTopic();
+        String topic = getPublishTopic(sensor);
         if (topic == null || topic.isEmpty()) {
             return;
         }
@@ -287,12 +287,23 @@ public class MqttManager implements MqttCallback {
             return;
         }
 
-        String topic = actuator.getTopic();
+        String topic = getPublishTopic(actuator);
         if (topic == null || topic.isEmpty()) {
             return;
         }
 
         publish(topic, state);
+    }
+
+    private String getPublishTopic(DeviceConfig device) {
+        if (device.getActionData() != null) {
+            String publishTopic = device.getActionData().get("publish");
+            if (publishTopic != null && !publishTopic.isEmpty()) {
+                return publishTopic;
+            }
+        }
+
+        return device.getTopic();
     }
 
     public void refreshPolling(DeviceConfig sensor) {
