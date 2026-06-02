@@ -263,6 +263,36 @@ public class MqttManager implements MqttCallback {
         String nextState = "1".equals(sensor.getCurrentState()) ? "0" : "1";
         sensor.setCurrentState(nextState);
         applyTargetState(sensor, nextState);
+        publishSensorState(sensor, nextState);
+        publishTargetActuatorState(sensor, nextState);
+    }
+
+    private void publishSensorState(DeviceConfig sensor, String state) {
+        String topic = sensor.getTopic();
+        if (topic == null || topic.isEmpty()) {
+            return;
+        }
+
+        publish(topic, state);
+    }
+
+    private void publishTargetActuatorState(DeviceConfig sensor, String state) {
+        String targetName = sensor.getActionData().get("target");
+        if (targetName == null || targetName.isEmpty()) {
+            return;
+        }
+
+        DeviceConfig actuator = plugin.getRegistryManager().getDevice(targetName);
+        if (actuator == null) {
+            return;
+        }
+
+        String topic = actuator.getTopic();
+        if (topic == null || topic.isEmpty()) {
+            return;
+        }
+
+        publish(topic, state);
     }
 
     public void refreshPolling(DeviceConfig sensor) {
