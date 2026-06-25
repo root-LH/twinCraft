@@ -4,3 +4,5 @@ mqtt:
   username: ""
   password: ""
 
+playback:
+  url: ""

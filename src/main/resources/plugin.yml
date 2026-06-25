@@ -2,7 +2,8 @@ name: twinCraft
 version: '1.0-SNAPSHOT'
 main: org.root712.twinCraft.TwinCraft
 api-version: '1.21'
+depend: [ProtocolLib]
 commands:
   tw:
     description: TwinCraft main command
-    usage: /tw <list|edit|delete|view>
+    usage: /tw <list|edit|delete|view|playback>

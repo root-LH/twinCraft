@@ -5,6 +5,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class TwinCraft extends JavaPlugin {
     private RegistryManager registryManager;
     private MqttManager mqttManager;
+    private PlaybackManager playbackManager;
 
     @Override
     public void onEnable() {
@@ -21,6 +22,7 @@ public final class TwinCraft extends JavaPlugin {
 
         // [5~16주차 구현 로직들의 기초 초기화]
         this.mqttManager = new MqttManager(this);
+        this.playbackManager = new PlaybackManager(this);
         this.mqttManager.connect(); // MQTT 연결 시작
 
         getCommand("tw").setExecutor(new TwinCraftCommand(this));
@@ -31,6 +33,9 @@ public final class TwinCraft extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (playbackManager != null) {
+            playbackManager.stopAll();
+        }
         if (mqttManager != null) {
             mqttManager.disconnect(); // 연결 해제
         }
@@ -43,5 +48,9 @@ public final class TwinCraft extends JavaPlugin {
 
     public RegistryManager getRegistryManager() {
         return registryManager;
+    }
+
+    public PlaybackManager getPlaybackManager() {
+        return playbackManager;
     }
 }

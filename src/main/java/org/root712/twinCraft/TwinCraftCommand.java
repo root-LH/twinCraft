@@ -40,12 +40,46 @@ public class TwinCraftCommand implements CommandExecutor {
             case "view":
                 handleView(sender, args);
                 break;
+            case "playback":
+                handlePlayback(sender, args);
+                break;
             default:
                 sendHelp(sender);
                 break;
         }
 
         return true;
+    }
+
+    private void handlePlayback(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(ChatColor.RED + "Playback can only be used by players.");
+            return;
+        }
+
+        Player player = (Player) sender;
+        if (args.length >= 2 && "stop".equalsIgnoreCase(args[1])) {
+            plugin.getPlaybackManager().stop(player);
+            return;
+        }
+
+        if (args.length < 3) {
+            sender.sendMessage(ChatColor.RED + "Usage: /tw playback <start> <end> [limit]");
+            sender.sendMessage(ChatColor.YELLOW + "Use /tw playback stop to clear your playback view.");
+            return;
+        }
+
+        int limit = 5000;
+        if (args.length >= 4) {
+            try {
+                limit = Integer.parseInt(args[3]);
+            } catch (NumberFormatException e) {
+                sender.sendMessage(ChatColor.RED + "Limit must be a number.");
+                return;
+            }
+        }
+
+        plugin.getPlaybackManager().start(player, args[1], args[2], limit);
     }
 
     private void handleList(CommandSender sender) {
