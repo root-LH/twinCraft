@@ -46,7 +46,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -444,6 +443,11 @@ public class PlaybackManager {
                 return;
             }
 
+            if ("CIRCUIT".equalsIgnoreCase(actuator.getAction())) {
+                sendCircuit(actuator, state);
+                return;
+            }
+
             Material material = getStateMaterial(actuator, state);
             if (material == null) {
                 return;
@@ -518,6 +522,41 @@ public class PlaybackManager {
             Door upper = (Door) material.createBlockData();
             upper.setHalf(Bisected.Half.TOP);
             sendBlockData(loc.clone().add(0, 1, 0), upper);
+        }
+
+        void sendCircuit(DeviceConfig actuator, String state) {
+            Location loc = actuator.toBukkitLocation();
+            if (loc == null || loc.getWorld() == null) return;
+
+            boolean isOn = "1".equals(state);
+
+            applyCircuitAndSend(loc, isOn);
+
+            BlockData blockData = loc.getBlock().getBlockData();
+            if (blockData instanceof Door door) {
+                Location otherLoc = (door.getHalf() == Bisected.Half.BOTTOM)
+                        ? loc.clone().add(0, 1, 0)
+                        : loc.clone().add(0, -1, 0);
+                if (otherLoc.getBlock().getBlockData() instanceof Door) {
+                    applyCircuitAndSend(otherLoc, isOn);
+                }
+            }
+        }
+
+        private void applyCircuitAndSend(Location loc, boolean isOn) {
+            BlockData blockData = loc.getBlock().getBlockData();
+
+            if (blockData instanceof org.bukkit.block.data.Lightable lightable) {
+                lightable.setLit(isOn);
+            }
+            if (blockData instanceof org.bukkit.block.data.Openable openable) {
+                openable.setOpen(isOn);
+            }
+            if (blockData instanceof org.bukkit.block.data.Powerable powerable) {
+                powerable.setPowered(isOn);
+            }
+
+            sendBlockData(loc, blockData);
         }
 
         boolean isDoorActuator(DeviceConfig actuator) {

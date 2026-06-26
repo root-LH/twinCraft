@@ -442,8 +442,23 @@ public class MqttManager implements MqttCallback {
         if (loc == null || loc.getWorld() == null) return;
 
         Block block = loc.getBlock();
-        BlockData blockData = block.getBlockData();
         boolean isOn = "1".equals(targetState);
+
+        applyCircuitToBlock(block, isOn);
+
+        BlockData blockData = block.getBlockData();
+        if (blockData instanceof Door door) {
+            Block otherHalf = (door.getHalf() == Bisected.Half.BOTTOM)
+                    ? block.getRelative(BlockFace.UP)
+                    : block.getRelative(BlockFace.DOWN);
+            if (otherHalf.getBlockData() instanceof Door) {
+                applyCircuitToBlock(otherHalf, isOn);
+            }
+        }
+    }
+
+    private void applyCircuitToBlock(Block block, boolean isOn) {
+        BlockData blockData = block.getBlockData();
 
         if (blockData instanceof org.bukkit.block.data.Lightable lightable){
             lightable.setLit(isOn);
