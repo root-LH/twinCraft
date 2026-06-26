@@ -208,6 +208,19 @@ public class TwinCraftCommand implements CommandExecutor {
                 refreshRuntimeState(device);
                 sender.sendMessage(ChatColor.GREEN + name + "의 actionData[" + args[3] + "]가 " + args[4] + "(으)로 설정되었습니다.");
                 break;
+            case "data-remove":
+                if (args.length < 4) {
+                    sender.sendMessage(ChatColor.RED + "사용법: /tw edit data-remove [name] [key]");
+                    return;
+                }
+                if (device.getActionData() == null || !device.getActionData().containsKey(args[3])) {
+                    sender.sendMessage(ChatColor.RED + name + " actionData[" + args[3] + "] 가 존재하지 않습니다.");
+                    return;
+                }
+                device.getActionData().remove(args[3]);
+                refreshRuntimeState(device);
+                sender.sendMessage(ChatColor.GREEN + name + " actionData[" + args[3] + "] 가 제거 되었습니다.");
+                break;
             case "pos":
                 if (args.length < 6) {
                     sender.sendMessage(ChatColor.RED + "사용법: /tw edit pos [name] [x] [y] [z]");
