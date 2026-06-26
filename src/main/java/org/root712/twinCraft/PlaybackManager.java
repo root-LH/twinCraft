@@ -294,6 +294,17 @@ public class PlaybackManager {
         return null;
     }
 
+    public void next(Player player) {
+        PlaybackSession session = sessions.get(player.getUniqueId());
+
+        if (session == null) {
+            player.sendMessage(ChatColor.RED + "Playback is not running.");
+            return;
+        }
+
+        session.jumpToNext();
+    }
+
     private final class PlaybackSession {
         private final Player player;
         private final List<PlaybackEvent> events;
@@ -502,6 +513,26 @@ public class PlaybackManager {
             }
 
             sendBlock(loc, material);
+        }
+
+        void jumpToNext(){
+            if (index >= events.size()){
+                player.sendMessage(ChatColor.GREEN + "Playback finished.");
+                return;
+            }
+
+            PlaybackEvent next = events.get(index);
+
+            if (timed){
+                elapsedTicks = Math.max(0, getDelayTicks(index) - 20);
+                showPlaybackTime();
+            }
+            apply(next);
+            index++;
+
+            resendPlaybackView();
+
+            player.sendMessage(ChatColor.YELLOW + "Jumped to next event.");
         }
 
         Material getStateMaterial(DeviceConfig actuator, String state) {

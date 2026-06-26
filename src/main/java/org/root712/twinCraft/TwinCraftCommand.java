@@ -58,9 +58,16 @@ public class TwinCraftCommand implements CommandExecutor {
         }
 
         Player player = (Player) sender;
-        if (args.length >= 2 && "stop".equalsIgnoreCase(args[1])) {
-            plugin.getPlaybackManager().stop(player);
-            return;
+        if (args.length >= 2) {
+            if ("stop".equalsIgnoreCase(args[1])) {
+                plugin.getPlaybackManager().stop(player);
+                return;
+            }
+
+            if ("next".equalsIgnoreCase(args[1])) {
+                plugin.getPlaybackManager().next(player);
+                return;
+            }
         }
 
         if (args.length < 3) {
