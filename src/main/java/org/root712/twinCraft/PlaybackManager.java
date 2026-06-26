@@ -368,6 +368,23 @@ public class PlaybackManager {
 
             String sensorName = getDeviceName(sensor);
             if (sensorName != null) {
+                String oldValue = sensorStates.get(sensorName);
+                if (oldValue == null || !oldValue.equals(event.value)) {
+                    String timePrefix = "";
+                    if (event.timestampMillis != null) {
+                        timePrefix = ChatColor.YELLOW + "["
+                                + LocalDateTime.ofInstant(Instant.ofEpochMilli(event.timestampMillis), ZoneId.systemDefault())
+                                        .format(DateTimeFormatter.ofPattern("HH:mm:ss"))
+                                + "] ";
+                    }
+                    player.sendMessage(timePrefix
+                            + ChatColor.GRAY + "[Playback] "
+                            + ChatColor.AQUA + sensorName
+                            + ChatColor.GRAY + ": "
+                            + ChatColor.RED + (oldValue == null ? "-" : oldValue)
+                            + ChatColor.GRAY + " → "
+                            + ChatColor.GREEN + event.value);
+                }
                 sensorStates.put(sensorName, event.value);
             }
 
