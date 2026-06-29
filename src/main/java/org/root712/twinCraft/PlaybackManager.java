@@ -748,7 +748,7 @@ public class PlaybackManager {
 
             if (clearView && player.isOnline()) {
                 for (Location loc : new ArrayList<>(fakeBlocks.keySet())) {
-                    sendBlock(loc, loc.getBlock().getType());
+                    sendBlockData(loc, loc.getBlock().getBlockData());
                 }
             }
             fakeBlocks.clear();
