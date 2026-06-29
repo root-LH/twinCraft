@@ -159,6 +159,27 @@ public class PlaybackManager {
         }
 
         boolean hasTimestamps = events.stream().anyMatch(event -> event.timestampMillis != null);
+        long baseTimestamp = System.currentTimeMillis();
+        if (hasTimestamps && !events.isEmpty()) {
+            baseTimestamp = events.stream().filter(e -> e.timestampMillis != null).mapToLong(e -> e.timestampMillis).min().orElse(System.currentTimeMillis());
+        } else {
+            try {
+                baseTimestamp = LocalDateTime.parse(start, PLAYBACK_TIME_FORMAT).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+            } catch (Exception ignored) {}
+        }
+
+        for (DeviceConfig sensor : sensors) {
+            try {
+                PlaybackEvent beforeEvent = fetchBeforeEvent(start, sensor.getTopic());
+                if (beforeEvent != null) {
+                    events.add(new PlaybackEvent(beforeEvent.topic(), beforeEvent.value(), baseTimestamp - 1, true));
+                    hasTimestamps = true;
+                }
+            } catch (Exception e) {
+                plugin.getLogger().warning("Failed to fetch before state for " + sensor.getTopic() + ": " + e.getMessage());
+            }
+        }
+
         if (hasTimestamps) {
             events.sort(Comparator.comparingLong(event -> event.timestampMillis == null ? Long.MAX_VALUE : event.timestampMillis));
         }
@@ -190,6 +211,58 @@ public class PlaybackManager {
         return plugin.getConfig().getString("playback.url", DEFAULT_PLAYBACK_URL);
     }
 
+    private String getBeforeUrl() {
+        return plugin.getConfig().getString("playback.before_url", "");
+    }
+
+    private PlaybackEvent fetchBeforeEvent(String at, String topic) throws IOException, InterruptedException {
+        String urlStr = getBeforeUrl();
+        if (urlStr == null || urlStr.isEmpty()) {
+            return null;
+        }
+        String url = urlStr
+                + "?at=" + encode(at)
+                + "&topic=" + encode(topic)
+                + "&include_debug=false";
+
+        HttpRequest request = HttpRequest.newBuilder(URI.create(url))
+                .GET()
+                .timeout(Duration.ofSeconds(10))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            if (response.statusCode() == 404) {
+                return null;
+            }
+            throw new IOException("HTTP " + response.statusCode() + " for topic " + topic);
+        }
+
+        JsonElement root = JsonParser.parseString(response.body());
+        if (!root.isJsonObject()) {
+            return null;
+        }
+
+        JsonObject rootObj = root.getAsJsonObject();
+        if (!rootObj.has("event") || !rootObj.get("event").isJsonObject()) {
+            return null;
+        }
+
+        JsonObject eventObj = rootObj.getAsJsonObject("event");
+        String eventTopic = firstString(eventObj, "topic", "mqtt_topic", "device_topic");
+        String value = firstString(eventObj, "value", "payload", "state", "message");
+        Long timestamp = firstTimestamp(eventObj, "timestamp", "time", "created_at", "createdAt", "ts");
+
+        if (eventTopic == null) {
+            eventTopic = topic;
+        }
+        if (value == null) {
+            return null;
+        }
+
+        return new PlaybackEvent(eventTopic, value, timestamp, true);
+    }
+
     private String encode(String value) {
         return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
@@ -216,7 +289,7 @@ public class PlaybackManager {
                 continue;
             }
 
-            events.add(new PlaybackEvent(topic, value, timestamp));
+            events.add(new PlaybackEvent(topic, value, timestamp, false));
         }
         return events;
     }
@@ -381,20 +454,22 @@ public class PlaybackManager {
             if (sensorName != null) {
                 String oldValue = sensorStates.get(sensorName);
                 if (oldValue == null || !oldValue.equals(event.value)) {
-                    String timePrefix = "";
-                    if (event.timestampMillis != null) {
-                        timePrefix = ChatColor.YELLOW + "["
-                                + LocalDateTime.ofInstant(Instant.ofEpochMilli(event.timestampMillis), ZoneId.systemDefault())
-                                        .format(DateTimeFormatter.ofPattern("HH:mm:ss"))
-                                + "] ";
+                    if (!event.isInitial) {
+                        String timePrefix = "";
+                        if (event.timestampMillis != null) {
+                            timePrefix = ChatColor.YELLOW + "["
+                                    + LocalDateTime.ofInstant(Instant.ofEpochMilli(event.timestampMillis), ZoneId.systemDefault())
+                                            .format(DateTimeFormatter.ofPattern("HH:mm:ss"))
+                                    + "] ";
+                        }
+                        player.sendMessage(timePrefix
+                                + ChatColor.GRAY + "[Playback] "
+                                + ChatColor.AQUA + sensorName
+                                + ChatColor.GRAY + ": "
+                                + ChatColor.RED + (oldValue == null ? "-" : oldValue)
+                                + ChatColor.GRAY + " → "
+                                + ChatColor.GREEN + event.value);
                     }
-                    player.sendMessage(timePrefix
-                            + ChatColor.GRAY + "[Playback] "
-                            + ChatColor.AQUA + sensorName
-                            + ChatColor.GRAY + ": "
-                            + ChatColor.RED + (oldValue == null ? "-" : oldValue)
-                            + ChatColor.GRAY + " → "
-                            + ChatColor.GREEN + event.value);
                 }
                 sensorStates.put(sensorName, event.value);
             }
@@ -823,6 +898,6 @@ public class PlaybackManager {
         }
     }
 
-    private record PlaybackEvent(String topic, String value, Long timestampMillis) {
+    private record PlaybackEvent(String topic, String value, Long timestampMillis, boolean isInitial) {
     }
 }
