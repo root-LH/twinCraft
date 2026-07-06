@@ -389,12 +389,7 @@ public class PlaybackManager {
     }
 
     private String getDeviceName(DeviceConfig device) {
-        for (Map.Entry<String, DeviceConfig> entry : plugin.getRegistryManager().getAllDevices().entrySet()) {
-            if (entry.getValue() == device) {
-                return entry.getKey();
-            }
-        }
-        return null;
+        return plugin.getRegistryManager().getDeviceName(device);
     }
 
     public void next(Player player) {

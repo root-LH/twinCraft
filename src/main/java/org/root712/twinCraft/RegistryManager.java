@@ -11,6 +11,7 @@ public class RegistryManager {
     private final Map<String, DeviceConfig> deviceMap = new HashMap<>();
     private final Map<String, DeviceConfig> topicMap = new HashMap<>();
     private final Map<Location, DeviceConfig> locationMap = new HashMap<>();
+    private final Map<DeviceConfig, String> deviceNameCache = new HashMap<>();
 
     public RegistryManager(TwinCraft plugin) {
         this.plugin = plugin;
@@ -44,10 +45,19 @@ public class RegistryManager {
     private void rebuildMaps() {
         topicMap.clear();
         locationMap.clear();
-        for (DeviceConfig device : deviceMap.values()) {
+        deviceNameCache.clear();
+
+        for (Map.Entry<String, DeviceConfig> entry : deviceMap.entrySet()) {
+
+            String name = entry.getKey();
+            DeviceConfig device = entry.getValue();
+
+            deviceNameCache.put(device, name);
+
             if (device.getTopic() != null) {
                 topicMap.put(device.getTopic(), device);
             }
+
             Location loc = device.toBukkitLocation();
             if (loc != null) {
                 locationMap.put(loc, device);
@@ -92,5 +102,9 @@ public class RegistryManager {
 
     public DeviceConfig getDeviceByLocation(Location loc) {
         return locationMap.get(loc);
+    }
+
+    public String getDeviceName(DeviceConfig device) {
+        return deviceNameCache.get(device);
     }
 }
