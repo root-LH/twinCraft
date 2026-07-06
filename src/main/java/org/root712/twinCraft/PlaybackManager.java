@@ -51,7 +51,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class PlaybackManager {
     private static final String DEFAULT_PLAYBACK_URL = "";
@@ -64,6 +67,7 @@ public class PlaybackManager {
     private final HttpClient httpClient = HttpClient.newHttpClient();
     private final Map<UUID, PlaybackSession> sessions = new ConcurrentHashMap<>();
     private final Set<UUID> playbackPacketBypass = ConcurrentHashMap.newKeySet();
+    private final ExecutorService playbackExecutor = Executors.newFixedThreadPool(16);
 
     public PlaybackManager(TwinCraft plugin) {
         this.plugin = plugin;
@@ -153,9 +157,24 @@ public class PlaybackManager {
     }
 
     private List<PlaybackEvent> fetchAllEvents(String start, String end, int limit, List<DeviceConfig> sensors) throws IOException, InterruptedException {
-        List<PlaybackEvent> events = new ArrayList<>();
+        List<CompletableFuture<List<PlaybackEvent>>> futures = new ArrayList<>();
         for (DeviceConfig sensor : sensors) {
-            events.addAll(fetchEvents(start, end, sensor.getTopic(), limit));
+            futures.add(CompletableFuture.supplyAsync(() -> {
+                try {
+                    return fetchEvents(start, end, sensor.getTopic(), limit);
+                } catch (Exception e){
+                    plugin.getLogger().warning("Playback fetch failed : " + sensor.getTopic() + " : " + e.getMessage());
+                    return List.of();
+                }
+            }, playbackExecutor));
+        }
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+        List<PlaybackEvent> events = new ArrayList<>();
+
+        for (CompletableFuture<List<PlaybackEvent>> future : futures){
+            events.addAll(future.join());
         }
 
         boolean hasTimestamps = events.stream().anyMatch(event -> event.timestampMillis != null);
@@ -167,16 +186,27 @@ public class PlaybackManager {
                 baseTimestamp = LocalDateTime.parse(start, PLAYBACK_TIME_FORMAT).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
             } catch (Exception ignored) {}
         }
+        List<CompletableFuture<PlaybackEvent>> beforeFutures = new ArrayList<>();
 
         for (DeviceConfig sensor : sensors) {
-            try {
-                PlaybackEvent beforeEvent = fetchBeforeEvent(start, sensor.getTopic());
-                if (beforeEvent != null) {
-                    events.add(new PlaybackEvent(beforeEvent.topic(), beforeEvent.value(), baseTimestamp - 1, true));
-                    hasTimestamps = true;
+            beforeFutures.add(CompletableFuture.supplyAsync(() -> {
+                try{
+                    return fetchBeforeEvent(start, sensor.getTopic());
+                } catch (Exception e){
+                    plugin.getLogger().warning("Failed to fetch before state for " + sensor.getTopic() + ": " + e.getMessage());
+                    return null;
                 }
-            } catch (Exception e) {
-                plugin.getLogger().warning("Failed to fetch before state for " + sensor.getTopic() + ": " + e.getMessage());
+            }, playbackExecutor));
+        }
+
+        CompletableFuture.allOf(beforeFutures.toArray(new CompletableFuture[0])).join();
+
+        for (CompletableFuture<PlaybackEvent> future : beforeFutures){
+            PlaybackEvent event = future.join();
+            if (event != null){
+                events.add(new PlaybackEvent(event.topic(), event.value(), baseTimestamp - 1, true));
+
+                hasTimestamps = true;
             }
         }
 
