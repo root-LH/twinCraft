@@ -27,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class MqttManager implements MqttCallback {
@@ -41,6 +42,8 @@ public class MqttManager implements MqttCallback {
     private final Map<String, String> pendingSensorValues = new ConcurrentHashMap<>();
     private final Map<String, BukkitTask> pollingTasks = new HashMap<>();
     private final Map<String, Integer> pollingIntervals = new HashMap<>();
+    private final Set<String> activePollingTopics = ConcurrentHashMap.newKeySet();
+    private final Set<String> queuedPollingSetups = ConcurrentHashMap.newKeySet();
 
     private MqttClient client;
 
@@ -146,7 +149,17 @@ public class MqttManager implements MqttCallback {
         }
 
         pendingSensorValues.put(topic, value);
-        Bukkit.getScheduler().runTask(plugin, () -> ensurePollingTask(sensor));
+        if (activePollingTopics.contains(topic) || !queuedPollingSetups.add(topic)) {
+            return;
+        }
+
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            try {
+                ensurePollingTask(sensor);
+            } finally {
+                queuedPollingSetups.remove(topic);
+            }
+        });
     }
 
     private void ensurePollingTask(DeviceConfig sensor) {
@@ -158,6 +171,7 @@ public class MqttManager implements MqttCallback {
         int interval = sensor.getUpdateInterval();
         Integer currentInterval = pollingIntervals.get(topic);
         if (pollingTasks.containsKey(topic) && currentInterval != null && currentInterval == interval) {
+            activePollingTopics.add(topic);
             return;
         }
 
@@ -167,6 +181,7 @@ public class MqttManager implements MqttCallback {
         BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, () -> runPollingCycle(topic), periodTicks, periodTicks);
         pollingTasks.put(topic, task);
         pollingIntervals.put(topic, interval);
+        activePollingTopics.add(topic);
     }
 
     private void runPollingCycle(String topic) {
@@ -657,6 +672,7 @@ public class MqttManager implements MqttCallback {
             task.cancel();
         }
         pollingIntervals.remove(topic);
+        activePollingTopics.remove(topic);
     }
 
     private void stopAllPollingTasks() {
@@ -667,6 +683,8 @@ public class MqttManager implements MqttCallback {
         }
         pollingTasks.clear();
         pollingIntervals.clear();
+        activePollingTopics.clear();
+        queuedPollingSetups.clear();
         pendingSensorValues.clear();
     }
 
