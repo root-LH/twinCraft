@@ -4,11 +4,14 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
-public class TwinCraftCommand implements CommandExecutor {
+public class TwinCraftCommand implements CommandExecutor, TabCompleter {
     private final TwinCraft plugin;
 
     public TwinCraftCommand(TwinCraft plugin) {
@@ -49,6 +52,40 @@ public class TwinCraftCommand implements CommandExecutor {
         }
 
         return true;
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (args.length == 1) {
+            return complete(args[0], List.of("new", "list", "edit", "delete", "view", "playback", "help"));
+        }
+
+        String subCommand = args[0].toLowerCase();
+        if (args.length == 2) {
+            return switch (subCommand) {
+                case "edit" -> complete(args[1], List.of("topic", "type", "pos", "trigger", "interval", "action", "data", "data-remove"));
+                case "delete", "view" -> complete(args[1], plugin.getRegistryManager().getAllDevices().keySet());
+                case "playback" -> complete(args[1], List.of("stop", "next"));
+                default -> List.of();
+            };
+        }
+
+        if (args.length == 3 && "edit".equals(subCommand)) {
+            return complete(args[2], plugin.getRegistryManager().getAllDevices().keySet());
+        }
+
+        return List.of();
+    }
+
+    private List<String> complete(String input, Iterable<String> candidates) {
+        String lowerInput = input.toLowerCase();
+        List<String> matches = new ArrayList<>();
+        for (String candidate : candidates) {
+            if (candidate.toLowerCase().startsWith(lowerInput)) {
+                matches.add(candidate);
+            }
+        }
+        return matches;
     }
 
     private void handlePlayback(CommandSender sender, String[] args) {

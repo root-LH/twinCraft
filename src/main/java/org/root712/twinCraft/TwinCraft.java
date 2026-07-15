@@ -25,7 +25,9 @@ public final class TwinCraft extends JavaPlugin {
         this.playbackManager = new PlaybackManager(this);
         this.mqttManager.connect(); // MQTT 연결 시작
 
-        getCommand("tw").setExecutor(new TwinCraftCommand(this));
+        TwinCraftCommand command = new TwinCraftCommand(this);
+        getCommand("tw").setExecutor(command);
+        getCommand("tw").setTabCompleter(command);
         getServer().getPluginManager().registerEvents(new InteractionListener(this), this);
 
         getLogger().info("TwinCraft 매핑 시스템 및 MQTT 연결이 완료되었습니다.");
