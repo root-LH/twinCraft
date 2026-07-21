@@ -90,7 +90,7 @@ public class TwinCraftCommand implements CommandExecutor, TabCompleter {
 
     private void handlePlayback(CommandSender sender, String[] args) {
         if (!(sender instanceof Player)) {
-            sender.sendMessage(ChatColor.RED + "Playback can only be used by players.");
+            sender.sendMessage(ChatColor.RED + "Playback은 플레이어만 사용할 수 있습니다.");
             return;
         }
 
@@ -108,8 +108,9 @@ public class TwinCraftCommand implements CommandExecutor, TabCompleter {
         }
 
         if (args.length < 3) {
-            sender.sendMessage(ChatColor.RED + "Usage: /tw playback <start> <end> [limit]");
-            sender.sendMessage(ChatColor.YELLOW + "Use /tw playback stop to clear your playback view.");
+            sender.sendMessage(ChatColor.RED + "사용법: /tw playback [start] [end] [limit]");
+            sender.sendMessage(ChatColor.YELLOW + "/tw playback next - 다음 Playback 이벤트를 즉시 적용");
+            sender.sendMessage(ChatColor.YELLOW + "/tw playback stop - 현재 playback 종료");
             return;
         }
 
@@ -354,6 +355,7 @@ public class TwinCraftCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(ChatColor.YELLOW + "=== TwinCraft 명령어 도움말 ===");
         sender.sendMessage(ChatColor.WHITE + "/tw new [name] - 새 노드 생성");
         sender.sendMessage(ChatColor.WHITE + "/tw list - 모든 노드 목록 출력");
+        sender.sendMessage(ChatColor.WHITE + "/tw view [name] - 장치의 정보를 출력");
         sender.sendMessage(ChatColor.WHITE + "/tw edit topic [name] [topic] - 토픽 변경");
         sender.sendMessage(ChatColor.WHITE + "/tw edit type [name] [sensor|actuator] - 타입 변경");
         sender.sendMessage(ChatColor.WHITE + "/tw edit pos [name] [x] [y] [z] - 위치 변경");
@@ -361,7 +363,10 @@ public class TwinCraftCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(ChatColor.WHITE + "/tw edit interval [name] [ms] - 폴링 주기 설정");
         sender.sendMessage(ChatColor.WHITE + "/tw edit action [name] [action] - 액션 설정");
         sender.sendMessage(ChatColor.WHITE + "/tw edit data [name] [key] [value] - 액션 데이터 설정");
+        sender.sendMessage(ChatColor.WHITE + "/tw edit data-remove [name] [key] - 액션 데이터에서 key를 제거");
         sender.sendMessage(ChatColor.WHITE + "/tw delete [name] - 노드 삭제");
-        sender.sendMessage(ChatColor.WHITE + "/tw view [name] - 노드 정보 출력");
+        sender.sendMessage(ChatColor.WHITE + "/tw playback [start] [end] [limit] - 지정한 기간의 센서 데이터를 Playback으로 재생");
+        sender.sendMessage(ChatColor.WHITE + "/tw playback stop - 현재 Playback을 중지");
+        sender.sendMessage(ChatColor.WHITE + "/tw playback next - 다음 Playback 이벤트를 즉시 적용");
     }
 }
