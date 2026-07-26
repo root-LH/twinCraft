@@ -616,23 +616,42 @@ public class PlaybackManager {
         }
 
         void jumpToNext(){
-            if (index >= events.size()){
-                player.sendMessage(ChatColor.GREEN + "Playback finished.");
-                return;
-            }
+            while (index < events.size()) {
+                int eventIndex = index;
+                PlaybackEvent next = events.get(eventIndex);
+                boolean stateChanged = changesSensorState(next);
 
-            PlaybackEvent next = events.get(index);
+                if (timed) {
+                    elapsedTicks = getDelayTicks(eventIndex);
+                }
+                apply(next);
+                index++;
 
-            if (timed){
-                elapsedTicks = Math.max(0, getDelayTicks(index) - 20);
-                showPlaybackTime();
+                if (stateChanged) {
+                    showPlaybackTime();
+                    resendPlaybackView();
+                    player.sendMessage(ChatColor.YELLOW + "Jumped to next changed event.");
+                    return;
+                }
             }
-            apply(next);
-            index++;
 
             resendPlaybackView();
+            player.sendMessage(ChatColor.GREEN + "Playback finished.");
+        }
 
-            player.sendMessage(ChatColor.YELLOW + "Jumped to next event.");
+        private boolean changesSensorState(PlaybackEvent event) {
+            DeviceConfig sensor = plugin.getRegistryManager().getDeviceByTopic(event.topic);
+            if (sensor == null || sensor.getAction() == null || !"SENSOR".equalsIgnoreCase(sensor.getType())) {
+                return false;
+            }
+
+            String sensorName = getDeviceName(sensor);
+            if (sensorName == null) {
+                return false;
+            }
+
+            String oldValue = sensorStates.get(sensorName);
+            return oldValue == null || !oldValue.equals(event.value);
         }
 
         Material getStateMaterial(DeviceConfig actuator, String state) {

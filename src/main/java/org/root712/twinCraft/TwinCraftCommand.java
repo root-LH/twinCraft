@@ -46,6 +46,10 @@ public class TwinCraftCommand implements CommandExecutor, TabCompleter {
             case "playback":
                 handlePlayback(sender, args);
                 break;
+            case "help":
+            case "?":
+                handleHelp(sender, args);
+                break;
             default:
                 sendHelp(sender);
                 break;
@@ -66,6 +70,7 @@ public class TwinCraftCommand implements CommandExecutor, TabCompleter {
                 case "edit" -> complete(args[1], List.of("topic", "type", "pos", "trigger", "interval", "action", "data", "data-remove"));
                 case "delete", "view" -> complete(args[1], plugin.getRegistryManager().getAllDevices().keySet());
                 case "playback" -> complete(args[1], List.of("stop", "next"));
+                case "help", "?" -> complete(args[1], List.of("edit", "playback"));
                 default -> List.of();
             };
         }
@@ -351,22 +356,53 @@ public class TwinCraftCommand implements CommandExecutor, TabCompleter {
         }
     }
 
+    private void handleHelp(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sendHelp(sender);
+            return;
+        }
+
+        switch (args[1].toLowerCase()) {
+            case "edit":
+                sendEditHelp(sender);
+                break;
+            case "playback":
+                sendPlaybackHelp(sender);
+                break;
+            default:
+                sender.sendMessage(ChatColor.RED + "알 수 없는 도움말 항목입니다: " + args[1]);
+                sender.sendMessage(ChatColor.GRAY + "사용법: /tw help edit 또는 /tw help playback");
+                break;
+        }
+    }
+
     private void sendHelp(CommandSender sender) {
-        sender.sendMessage(ChatColor.YELLOW + "=== TwinCraft 명령어 도움말 ===");
-        sender.sendMessage(ChatColor.WHITE + "/tw new [name] - 새 노드 생성");
-        sender.sendMessage(ChatColor.WHITE + "/tw list - 모든 노드 목록 출력");
-        sender.sendMessage(ChatColor.WHITE + "/tw view [name] - 장치의 정보를 출력");
-        sender.sendMessage(ChatColor.WHITE + "/tw edit topic [name] [topic] - 토픽 변경");
-        sender.sendMessage(ChatColor.WHITE + "/tw edit type [name] [sensor|actuator] - 타입 변경");
-        sender.sendMessage(ChatColor.WHITE + "/tw edit pos [name] [x] [y] [z] - 위치 변경");
-        sender.sendMessage(ChatColor.WHITE + "/tw edit trigger [name] [polling|event] - 트리거 방식 설정");
-        sender.sendMessage(ChatColor.WHITE + "/tw edit interval [name] [ms] - 폴링 주기 설정");
-        sender.sendMessage(ChatColor.WHITE + "/tw edit action [name] [action] - 액션 설정");
-        sender.sendMessage(ChatColor.WHITE + "/tw edit data [name] [key] [value] - 액션 데이터 설정");
-        sender.sendMessage(ChatColor.WHITE + "/tw edit data-remove [name] [key] - 액션 데이터에서 key를 제거");
-        sender.sendMessage(ChatColor.WHITE + "/tw delete [name] - 노드 삭제");
-        sender.sendMessage(ChatColor.WHITE + "/tw playback [start] [end] [limit] - 지정한 기간의 센서 데이터를 Playback으로 재생");
-        sender.sendMessage(ChatColor.WHITE + "/tw playback stop - 현재 Playback을 중지");
-        sender.sendMessage(ChatColor.WHITE + "/tw playback next - 다음 Playback 이벤트를 즉시 적용");
+        sender.sendMessage(ChatColor.GOLD + "=== TwinCraft 도움말 ===");
+        sender.sendMessage(ChatColor.YELLOW + "/tw new <name>" + ChatColor.GRAY + " - 장치 생성");
+        sender.sendMessage(ChatColor.YELLOW + "/tw list" + ChatColor.GRAY + " - 장치 목록");
+        sender.sendMessage(ChatColor.YELLOW + "/tw view <name>" + ChatColor.GRAY + " - 장치 정보");
+        sender.sendMessage(ChatColor.YELLOW + "/tw edit ..." + ChatColor.GRAY + " - 장치 설정 변경");
+        sender.sendMessage(ChatColor.YELLOW + "/tw delete <name>" + ChatColor.GRAY + " - 장치 삭제");
+        sender.sendMessage(ChatColor.YELLOW + "/tw playback ..." + ChatColor.GRAY + " - Playback 제어");
+        sender.sendMessage(ChatColor.DARK_GRAY + "세부 도움말: /tw help edit, /tw help playback");
+    }
+
+    private void sendEditHelp(CommandSender sender) {
+        sender.sendMessage(ChatColor.GOLD + "=== 장치 설정 명령어 ===");
+        sender.sendMessage(ChatColor.YELLOW + "/tw edit topic <name> <topic>");
+        sender.sendMessage(ChatColor.YELLOW + "/tw edit type <name> <sensor|actuator>");
+        sender.sendMessage(ChatColor.YELLOW + "/tw edit pos <name> <x> <y> <z>");
+        sender.sendMessage(ChatColor.YELLOW + "/tw edit trigger <name> <polling|event>");
+        sender.sendMessage(ChatColor.YELLOW + "/tw edit interval <name> <ms>");
+        sender.sendMessage(ChatColor.YELLOW + "/tw edit action <name> <action>");
+        sender.sendMessage(ChatColor.YELLOW + "/tw edit data <name> <key> <value>");
+        sender.sendMessage(ChatColor.YELLOW + "/tw edit data-remove <name> <key>");
+    }
+
+    private void sendPlaybackHelp(CommandSender sender) {
+        sender.sendMessage(ChatColor.GOLD + "=== Playback 명령어 ===");
+        sender.sendMessage(ChatColor.YELLOW + "/tw playback <start> <end> [limit]");
+        sender.sendMessage(ChatColor.YELLOW + "/tw playback stop");
+        sender.sendMessage(ChatColor.YELLOW + "/tw playback next");
     }
 }
