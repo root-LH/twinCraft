@@ -110,6 +110,10 @@ public class PlaybackManager {
         sessions.clear();
     }
 
+    public boolean isPlaying(Player player) {
+        return sessions.containsKey(player.getUniqueId());
+    }
+
     private void registerRealtimePacketFilter() {
         protocolManager.addPacketListener(new PacketAdapter(
                 plugin,
