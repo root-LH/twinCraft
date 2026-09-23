@@ -2,6 +2,7 @@ package org.root712.twinCraft;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -622,7 +623,9 @@ public class MqttManager implements MqttCallback {
         stopFanParticle(key);
 
         BlockFace facing = parseBlockFace(actuator.getActionData().getOrDefault("facing", "EAST"));
-        Particle particle = parseParticle(actuator.getActionData().getOrDefault("particle", "CLOUD"));
+        Particle particle = parseParticle(actuator.getActionData().getOrDefault("particle", "DUST"));
+        Particle.DustOptions dustOptions = new Particle.DustOptions(Color.fromRGB(185, 195, 205), 0.6f);
+        double[] angle = {0.0};
 
         BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             if (block.getWorld() == null || !isTrapDoor(block.getType())) {
@@ -630,22 +633,29 @@ public class MqttManager implements MqttCallback {
                 return;
             }
 
-            Location particleLoc = block.getLocation().add(
-                    0.5 + facing.getModX() * 0.75,
+            Location center = block.getLocation().add(
+                    0.5 + facing.getModX() * 0.56,
                     0.5,
-                    0.5 + facing.getModZ() * 0.75
+                    0.5 + facing.getModZ() * 0.56
             );
-
-            block.getWorld().spawnParticle(
-                    particle,
-                    particleLoc,
-                    6,
-                    Math.abs(facing.getModZ()) * 0.35,
-                    0.08,
-                    Math.abs(facing.getModX()) * 0.35,
-                    0.02
-            );
-        }, 0L, 10L);
+            double sideX = Math.abs(facing.getModZ());
+            double sideZ = Math.abs(facing.getModX());
+            for (int blade = 0; blade < 3; blade++) {
+                double bladeAngle = angle[0] + (Math.PI * 2.0 * blade / 3.0);
+                double radius = 0.26;
+                Location particleLoc = center.clone().add(
+                        sideX * Math.cos(bladeAngle) * radius,
+                        Math.sin(bladeAngle) * radius,
+                        sideZ * Math.cos(bladeAngle) * radius
+                );
+                if (particle == Particle.DUST) {
+                    block.getWorld().spawnParticle(particle, particleLoc, 1, 0.0, 0.0, 0.0, 0.0, dustOptions);
+                } else {
+                    block.getWorld().spawnParticle(particle, particleLoc, 1, 0.0, 0.0, 0.0, 0.0);
+                }
+            }
+            angle[0] = (angle[0] + Math.PI / 6.0) % (Math.PI * 2.0);
+        }, 0L, 4L);
 
         particleTasks.put(key, task);
     }
@@ -707,7 +717,7 @@ public class MqttManager implements MqttCallback {
         try {
             return Particle.valueOf(value.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException | NullPointerException ignored) {
-            return Particle.CLOUD;
+            return Particle.DUST;
         }
     }
 

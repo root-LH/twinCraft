@@ -15,6 +15,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -23,6 +24,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Bisected;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.type.Door;
+import org.bukkit.block.data.type.TrapDoor;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
@@ -592,7 +594,7 @@ public class PlaybackManager {
 
             if ("WALL_FAN".equalsIgnoreCase(actuator.getActionData().get("block_style"))) {
                 if ("1".equals(state)) {
-                    sendBlock(loc, material);
+                    sendWallFan(loc, material, actuator);
                     startFanParticle(targetName, loc, actuator);
                 } else {
                     stopFanParticle(targetName);
@@ -671,6 +673,16 @@ public class PlaybackManager {
 
         void sendBlock(Location loc, Material material) {
             sendBlockData(loc, material.createBlockData());
+        }
+
+        void sendWallFan(Location loc, Material material, DeviceConfig actuator) {
+            BlockData blockData = material.createBlockData();
+            if (blockData instanceof TrapDoor trapDoor) {
+                trapDoor.setOpen(true);
+                trapDoor.setHalf(Bisected.Half.TOP);
+                trapDoor.setFacing(parseFace(actuator.getActionData().getOrDefault("facing", "EAST")));
+            }
+            sendBlockData(loc, blockData);
         }
 
         void sendBlockData(Location loc, BlockData blockData) {
@@ -820,7 +832,9 @@ public class PlaybackManager {
         void startFanParticle(String key, Location loc, DeviceConfig actuator) {
             stopFanParticle(key);
             BlockFace facing = parseFace(actuator.getActionData().getOrDefault("facing", "EAST"));
-            Particle particle = parseParticle(actuator.getActionData().getOrDefault("particle", "CLOUD"));
+            Particle particle = parseParticle(actuator.getActionData().getOrDefault("particle", "DUST"));
+            Particle.DustOptions dustOptions = new Particle.DustOptions(Color.fromRGB(185, 195, 205), 0.6f);
+            double[] angle = {0.0};
 
             BukkitTask particleTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
                 if (!player.isOnline()) {
@@ -828,17 +842,29 @@ public class PlaybackManager {
                     return;
                 }
 
-                Location particleLoc = loc.clone().add(
-                        0.5 + facing.getModX() * 0.75,
+                Location center = loc.clone().add(
+                        0.5 + facing.getModX() * 0.56,
                         0.5,
-                        0.5 + facing.getModZ() * 0.75
+                        0.5 + facing.getModZ() * 0.56
                 );
-                player.spawnParticle(particle, particleLoc, 6,
-                        Math.abs(facing.getModZ()) * 0.35,
-                        0.08,
-                        Math.abs(facing.getModX()) * 0.35,
-                        0.02);
-            }, 0L, 10L);
+                double sideX = Math.abs(facing.getModZ());
+                double sideZ = Math.abs(facing.getModX());
+                for (int blade = 0; blade < 3; blade++) {
+                    double bladeAngle = angle[0] + (Math.PI * 2.0 * blade / 3.0);
+                    double radius = 0.26;
+                    Location particleLoc = center.clone().add(
+                            sideX * Math.cos(bladeAngle) * radius,
+                            Math.sin(bladeAngle) * radius,
+                            sideZ * Math.cos(bladeAngle) * radius
+                    );
+                    if (particle == Particle.DUST) {
+                        player.spawnParticle(particle, particleLoc, 1, 0.0, 0.0, 0.0, 0.0, dustOptions);
+                    } else {
+                        player.spawnParticle(particle, particleLoc, 1, 0.0, 0.0, 0.0, 0.0);
+                    }
+                }
+                angle[0] = (angle[0] + Math.PI / 6.0) % (Math.PI * 2.0);
+            }, 0L, 4L);
 
             particleTasks.put(key, particleTask);
         }
@@ -942,7 +968,7 @@ public class PlaybackManager {
         try {
             return Particle.valueOf(value.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException | NullPointerException ignored) {
-            return Particle.CLOUD;
+            return Particle.DUST;
         }
     }
 
