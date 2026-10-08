@@ -11,6 +11,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.type.Door;
 import org.bukkit.block.data.type.TrapDoor;
 import org.bukkit.entity.Display;
+import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.Tag;
@@ -529,6 +530,23 @@ public class MqttManager implements MqttCallback {
             }
         }
         textDisplays.clear();
+    }
+
+    public void setTextDisplaysVisible(Player player, boolean visible) {
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+
+        for (TextDisplay display : textDisplays.values()) {
+            if (display == null || display.isDead()) {
+                continue;
+            }
+            if (visible) {
+                player.showEntity(plugin, display);
+            } else {
+                player.hideEntity(plugin, display);
+            }
+        }
     }
 
     private void placeDoor(Block block, Material material) {

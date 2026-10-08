@@ -390,6 +390,7 @@ public class PlaybackManager {
 
         PlaybackSession session = new PlaybackSession(player, events);
         sessions.put(player.getUniqueId(), session);
+        plugin.getMqttManager().setTextDisplaysVisible(player, false);
         session.start();
         player.sendMessage(ChatColor.GREEN + "Playback started. events=" + events.size());
     }
@@ -899,6 +900,7 @@ public class PlaybackManager {
                 for (Location loc : new ArrayList<>(fakeBlocks.keySet())) {
                     sendBlockData(loc, loc.getBlock().getBlockData());
                 }
+                plugin.getMqttManager().setTextDisplaysVisible(player, true);
             }
             fakeBlocks.clear();
         }
